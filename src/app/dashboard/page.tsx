@@ -3,16 +3,24 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { MealForm } from '@/app/components/MealForm';
-import { useNutritionStore } from '@/app/store/nutrition-store';
 import { useUserStore } from '@/app/store/user-store';
+import { useNutritionStore } from '@/app/store/nutrition-store';
+import { MealForm } from '@/app/components/MealForm';
+import ImageUploader from '@/app/components/ImageUploader';
 import { NutritionAnalyzer } from '@/app/lib/nutrition-analyzer';
+import type { NutritionItem } from '@/app/types/nutrition';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { profile } = useUserStore();
-  const { meals, dailyNutrition, dailyTarget, setDailyNutrition, setDailyTarget } =
-    useNutritionStore();
+
+  const { profile, addMeal } = useUserStore();
+  const {
+    meals,
+    dailyNutrition,
+    dailyTarget,
+    setDailyNutrition,
+    setDailyTarget,
+  } = useNutritionStore();
 
   // Wenn kein Profil vorhanden ist → zurück zur Startseite
   useEffect(() => {
@@ -40,58 +48,62 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!dailyTarget) return;
 
-    const totals = NutritionAnalyzer.calculateDailyNutrition(meals, dailyTarget);
-    setDailyNutrition(totals);
+    const dn = NutritionAnalyzer.calculateDailyNutrition(meals, dailyTarget);
+    setDailyNutrition(dn);
   }, [meals, dailyTarget, setDailyNutrition]);
 
+  if (!profile) {
+    // kurz nichts rendern, bis redirect passiert
+    return null;
+  }
+
   return (
-    <main className="mx-auto max-w-2xl space-y-6 p-4">
-      <section>
-        <h1 className="mb-2 text-xl font-semibold">Dein Dashboard</h1>
-        <p className="text-sm text-gray-600">
-          Erfasse deine Mahlzeiten per Text oder Bild und sieh deine Tageswerte.
-        </p>
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-lg font-semibold">Neue Mahlzeit</h2>
-        <MealForm />
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-lg font-semibold">Heute</h2>
-        {dailyNutrition ? (
-          <p className="text-sm text-gray-700">
-            Kalorien: {dailyNutrition.totalCalories} kcal · Protein:{' '}
-            {dailyNutrition.totalProtein} g · Kohlenhydrate:{' '}
-            {dailyNutrition.totalCarbs} g · Fett: {dailyNutrition.totalFat} g
+    <main className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* Header */}
+        <header>
+          <h1 className="text-2xl font-bold">Dein Dashboard</h1>
+          <p className="text-sm text-gray-600">
+            Erfasse deine Mahlzeiten per Text oder Bild und sieh deine Tageswerte.
           </p>
-        ) : (
-          <p className="text-sm text-gray-400">
-            Noch keine Tageswerte berechnet.
-          </p>
+        </header>
+
+        {/* Text-Mahlzeit */}
+        <section className="bg-white rounded-xl shadow p-4">
+          <h2 className="font-semibold mb-2">Neue Mahlzeit (Text)</h2>
+          <MealForm />
+        </section>
+
+        {/* Bild-Mahlzeit */}
+        <section className="bg-white rounded-xl shadow p-4">
+          <h2 className="font-semibold mb-2">Neue Mahlzeit (Foto)</h2>
+          <ImageUploader
+            onMealDetected={(meal: NutritionItem) => {
+              // meal aus dem Bild-Analyzer ins User-Store übernehmen
+              addMeal(meal);
+            }}
+          />
+        </section>
+
+        {/* Tagesübersicht */}
+        {dailyNutrition && dailyTarget && (
+          <section className="bg-white rounded-xl shadow p-4">
+            <h2 className="font-semibold mb-2">Heute</h2>
+            <p>
+              Kalorien: {dailyNutrition.totalCalories} / {dailyTarget.calories} kcal
+            </p>
+            <p>
+              Protein: {dailyNutrition.totalProtein} g / {dailyTarget.protein} g
+            </p>
+            <p>
+              Kohlenhydrate: {dailyNutrition.totalCarbs} g / {dailyTarget.carbs} g
+            </p>
+            <p>
+              Fett: {dailyNutrition.totalFat} g / {dailyTarget.fat} g
+            </p>
+          </section>
         )}
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-lg font-semibold">Mahlzeiten</h2>
-        <ul className="space-y-2 text-sm">
-          {meals.map((m) => (
-            <li
-              key={m.id}
-              className="rounded-md border border-gray-200 p-2"
-            >
-              <div className="font-medium">{m.name}</div>
-              <div className="text-gray-600">
-                {m.calories} kcal · P {m.protein} g · C {m.carbs} g · F {m.fat} g
-              </div>
-            </li>
-          ))}
-          {meals.length === 0 && (
-            <li className="text-gray-400">Noch keine Mahlzeiten erfasst.</li>
-          )}
-        </ul>
-      </section>
+      </div>
     </main>
   );
 }
