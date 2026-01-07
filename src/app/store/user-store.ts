@@ -1,51 +1,63 @@
 import { create } from 'zustand';
-import { UserProfile, UserPreferences } from '@/app/types/user';
-import { DailyTarget } from '@/app/types/nutrition';
-import { NutritionAnalyzer } from '@/app/lib/nutrition-analyzer';
+import type { NutritionItem, NutritionData } from '../types/nutrition';
+
+export interface UserProfile {
+  age: number;
+  weightKg: number;
+  heightCm: number;
+  goal: 'lose' | 'maintain' | 'gain';
+  activityLevel: 'low' | 'medium' | 'high';
+}
 
 interface UserState {
   profile: UserProfile | null;
-  preferences: UserPreferences;
-  apiKey: string | null;
-  dailyTargets: DailyTarget | null;
+  meals: NutritionItem[];
+  aggregated: NutritionData;
+  addMeal: (item: NutritionItem) => void;
+  resetMeals: () => void;
   setProfile: (profile: UserProfile) => void;
-  setApiKey: (key: string) => void;
 }
 
-export const userStore = create<UserState>((set) => ({
+const emptyAggregated: NutritionData = {
+  items: [],
+  totalCalories: 0,
+  totalProtein: 0,
+  totalCarbs: 0,
+  totalFat: 0,
+};
+
+export const useUserStore = create<UserState>((set, get) => ({
   profile: null,
-  preferences: {
-    theme: 'auto',
-    notifications: true,
-    dailyReminder: '08:00',
-    mealsPerDay: 3,
-  },
-  apiKey: null,
-  dailyTargets: null,
+  meals: [],
+  aggregated: emptyAggregated,
 
-  setProfile: (profile) => {
-    const targets = NutritionAnalyzer.calculateDailyTarget(
-      profile.age,
-      profile.heightCm,
-      profile.weightKg,
-      profile.activityLevel,
-      profile.goal,
-    );
-
-    set({
-      profile,
-      dailyTargets: targets,
-    });
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('user_profile', JSON.stringify(profile));
-    }
+  setProfile(profile) {
+    set({ profile });
   },
 
-  setApiKey: (key) => {
-    set({ apiKey: key });
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('gemini_api_key', key);
-    }
+  addMeal(item) {
+    const id =
+      item.id ??
+      (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`);
+
+    const meal: NutritionItem = { ...item, id };
+
+    const meals = [...get().meals, meal];
+
+    const aggregated: NutritionData = {
+      items: meals,
+      totalCalories: meals.reduce((s, m) => s + (m.calories || 0), 0),
+      totalProtein: meals.reduce((s, m) => s + (m.protein || 0), 0),
+      totalCarbs: meals.reduce((s, m) => s + (m.carbs || 0), 0),
+      totalFat: meals.reduce((s, m) => s + (m.fat || 0), 0),
+    };
+
+    set({ meals, aggregated });
+  },
+
+  resetMeals() {
+    set({ meals: [], aggregated: emptyAggregated });
   },
 }));

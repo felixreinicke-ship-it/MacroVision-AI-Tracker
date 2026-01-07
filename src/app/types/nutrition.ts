@@ -1,50 +1,17 @@
-export interface FoodItem {
-  id: string;
+export interface NutritionItem {
+  id?: string; // optional, wird später erzeugt
   name: string;
   estimatedGrams: number;
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  fiber?: number;
-  sugar?: number;
-  saturatedFat?: number;
-  sodium?: number;
 }
 
-export interface Meal {
-  id: string;
-  name: string;
-  items: FoodItem[];
+export interface NutritionData {
+  items: NutritionItem[];
   totalCalories: number;
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
-  imageUrl?: string;
-  createdAt: string;
-  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-}
-
-export interface DailyTarget {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  fiber?: number;
-}
-
-export interface DailyNutrition {
-  date: string;
-  meals: Meal[];
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-  dailyTarget: DailyTarget;
-  progress: {
-    caloriesProgress: number;
-    proteinProgress: number;
-    carbsProgress: number;
-    fatProgress: number;
-  };
 }
