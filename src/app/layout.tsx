@@ -1,11 +1,10 @@
+// src/app/layout.tsx
 import type { Metadata } from 'next';
-import { Toaster } from 'react-hot-toast';
-import '@/app/globals.css';
-import { ThemeWrapper } from '@/app/theme-wrapper';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'MacroVision AI Tracker',
-  description: 'Intelligenter KI-gestützter Kalorientracker mit Gemini API',
+  title: 'MacroVision',
+  description: 'MacroVision – dein KI-Kalorientracker',
 };
 
 export default function RootLayout({
@@ -14,10 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de" suppressHydrationWarning>
-      <body>
-        <ThemeWrapper>{children}</ThemeWrapper>
-        <Toaster position="top-center" />
+    <html lang="de">
+      <body className="app-dark">
+        {children}
       </body>
     </html>
   );

@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 /* Basis */
-
 * {
   margin: 0;
   padding: 0;
@@ -16,7 +15,6 @@ body {
 }
 
 /* Light / Dark Wrapper */
-
 .app-light {
   background-color: #f2f2f7; /* iOS systemGroupedBackground hell */
   color: #111827;
@@ -28,7 +26,6 @@ body {
 }
 
 /* Karten */
-
 .card {
   border-radius: 24px;
   padding: 1rem;
@@ -48,7 +45,6 @@ body {
 }
 
 /* Buttons */
-
 .btn-primary {
   padding: 0.65rem 1rem;
   border-radius: 999px;
@@ -88,7 +84,6 @@ body {
 }
 
 /* Inputs */
-
 .input-field {
   width: 100%;
   padding: 0.7rem 0.9rem;
