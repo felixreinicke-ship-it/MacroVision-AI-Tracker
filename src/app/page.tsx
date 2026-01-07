@@ -8,12 +8,12 @@ import { geminiClient } from '@/app/lib/gemini-client';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { profile, setProfile, setApiKey } = userStore();
+  const { profile, setProfile, setApiKey } = useUserStore();
   const [step, setStep] = useState<'profile' | 'api'>('profile');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (profile && userStore.getState().apiKey) {
+    if (profile && useUserStore.getState().apiKey) {
       router.push('/dashboard');
     }
   }, [profile, router]);

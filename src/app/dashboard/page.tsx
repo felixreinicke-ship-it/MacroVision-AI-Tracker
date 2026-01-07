@@ -1,150 +1,79 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ImageUploader } from '@/app/components/ImageUploader';
 import { MealForm } from '@/app/components/MealForm';
 import { useNutritionStore } from '@/app/store/nutrition-store';
 import { useUserStore } from '@/app/store/user-store';
-import { NutritionAnalyzer } from '@/app/lib/nutrition-analyzer';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { profile, apiKey } = userStore();
+  const { profile } = useUserStore();
   const { meals, dailyNutrition, setDailyNutrition } = useNutritionStore();
 
   useEffect(() => {
-    if (!profile || !apiKey) {
+    // wenn kein Profil vorhanden ist, zurück zur Startseite
+    if (!profile) {
       router.push('/');
     }
-  }, [profile, apiKey, router]);
+  }, [profile, router]);
 
   useEffect(() => {
-    if (!profile) return;
-    const targets = NutritionAnalyzer.calculateDailyTarget(
-      profile.age,
-      profile.heightCm,
-      profile.weightKg,
-      profile.activityLevel,
-      profile.goal,
+    // tägliche Nährwerte aus den Mahlzeiten berechnen
+    const totals = meals.reduce(
+      (acc, m) => ({
+        calories: acc.calories + (m.calories || 0),
+        protein: acc.protein + (m.protein || 0),
+        carbs: acc.carbs + (m.carbs || 0),
+        fat: acc.fat + (m.fat || 0),
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
     );
-    const todayMeals = meals.filter((m) =>
-      m.createdAt.startsWith(new Date().toISOString().split('T')[0]),
-    );
-    const dn = NutritionAnalyzer.calculateDailyNutrition(todayMeals, targets);
-    setDailyNutrition(dn);
-  }, [meals, profile, setDailyNutrition]);
 
-  if (!profile) return null;
+    setDailyNutrition(totals);
+  }, [meals, setDailyNutrition]);
 
   return (
-    <div className="space-y-4">
-      {/* Header-Card */}
-      <section className="card p-4">
-        <p className="text-[11px] uppercase tracking-wide text-slate-400 mb-1">
-          Heute
-        </p>
-        <h1 className="text-xl font-semibold mb-1 tracking-tight">
-          MacroVision
-        </h1>
-        <p className="text-xs text-slate-500">
-          {profile.age} Jahre ·{' '}
-          {profile.goal === 'gain'
-            ? 'Muskelaufbau'
-            : profile.goal === 'lose'
-            ? 'Cut'
-            : 'Maintain'}
+    <main className="mx-auto max-w-2xl space-y-6 p-4">
+      <section>
+        <h1 className="mb-2 text-xl font-semibold">Dein Dashboard</h1>
+        <p className="text-sm text-gray-600">
+          Erfasse deine Mahlzeiten per Text oder Bild und sieh deine Tageswerte.
         </p>
       </section>
 
-      {/* Eingabe-Bereich: Bild + Text */}
-      <section className="grid gap-3 md:grid-cols-2">
-        <ImageUploader />
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">Neue Mahlzeit</h2>
         <MealForm />
       </section>
 
-      {/* Stats-Karten */}
-      {dailyNutrition && (
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard
-            label="Kalorien"
-            value={`${dailyNutrition.totalCalories} / ${dailyNutrition.dailyTarget.calories} kcal`}
-            progress={dailyNutrition.progress.caloriesProgress}
-          />
-          <StatCard
-            label="Protein"
-            value={`${dailyNutrition.totalProtein} / ${dailyNutrition.dailyTarget.protein} g`}
-            progress={dailyNutrition.progress.proteinProgress}
-          />
-          <StatCard
-            label="Carbs"
-            value={`${dailyNutrition.totalCarbs} / ${dailyNutrition.dailyTarget.carbs} g`}
-            progress={dailyNutrition.progress.carbsProgress}
-          />
-          <StatCard
-            label="Fett"
-            value={`${dailyNutrition.totalFat} / ${dailyNutrition.dailyTarget.fat} g`}
-            progress={dailyNutrition.progress.fatProgress}
-          />
-        </section>
-      )}
-
-      {/* Mahlzeiten-Liste */}
-      <section className="card p-4">
-        <h2 className="text-base font-semibold mb-2">Heutige Mahlzeiten</h2>
-        {meals.length === 0 && (
-          <p className="text-sm text-slate-500">
-            Noch keine Mahlzeiten eingetragen. Starte mit einem Foto oder einer
-            Beschreibung.
-          </p>
-        )}
-        <div className="space-y-2 mt-1">
-          {meals.map((meal) => (
-            <div
-              key={meal.id}
-              className="flex items-center justify-between rounded-xl px-3 py-2"
-              style={{
-                backgroundColor: 'rgba(148, 163, 184, 0.1)', // slate-400/10
-              }}
-            >
-              <div>
-                <p className="text-sm font-medium">{meal.name}</p>
-                <p className="text-xs text-slate-500">
-                  P {Math.round(meal.totalProtein)} g · C{' '}
-                  {Math.round(meal.totalCarbs)} g · F{' '}
-                  {Math.round(meal.totalFat)} g
-                </p>
-              </div>
-              <span className="text-xs font-semibold text-slate-600">
-                {Math.round(meal.totalCalories)} kcal
-              </span>
-            </div>
-          ))}
-        </div>
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">Heute</h2>
+        <p className="text-sm text-gray-700">
+          Kalorien: {dailyNutrition.calories} kcal · Protein: {dailyNutrition.protein} g ·
+          Kohlenhydrate: {dailyNutrition.carbs} g · Fett: {dailyNutrition.fat} g
+        </p>
       </section>
-    </div>
-  );
-}
 
-function StatCard({
-  label,
-  value,
-  progress,
-}: {
-  label: string;
-  value: string;
-  progress: number;
-}) {
-  return (
-    <div className="card p-3">
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
-      <p className="text-sm font-semibold mb-2">{value}</p>
-      <div className="w-full bg-slate-200 rounded-full h-1.5">
-        <div
-          className="h-1.5 rounded-full bg-blue-500"
-          style={{ width: `${Math.min(100, progress)}%` }}
-        />
-      </div>
-    </div>
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">Mahlzeiten</h2>
+        <ul className="space-y-2 text-sm">
+          {meals.map((m) => (
+            <li
+              key={m.id}
+              className="rounded-md border border-gray-200 p-2"
+            >
+              <div className="font-medium">{m.name}</div>
+              <div className="text-gray-600">
+                {m.calories} kcal · P {m.protein} g · C {m.carbs} g · F {m.fat} g
+              </div>
+            </li>
+          ))}
+          {meals.length === 0 && (
+            <li className="text-gray-400">Noch keine Mahlzeiten erfasst.</li>
+          )}
+        </ul>
+      </section>
+    </main>
   );
 }
