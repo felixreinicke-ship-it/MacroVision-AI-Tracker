@@ -28,7 +28,7 @@ export function ImageUploader({ onMealDetected }: ImageUploaderProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const { apiKey } = userStore();
+const { apiKey } = useUserStore();
   const { addMeal } = useNutritionStore();
 
   const handleImageChange = async (file: File) => {
