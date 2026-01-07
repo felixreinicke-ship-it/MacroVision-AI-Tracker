@@ -4,84 +4,73 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNutritionStore } from '@/app/store/nutrition-store';
 import { useUserStore } from '@/app/store/user-store';
-import { geminiClient } from '@/app/lib/gemini-client';
 
 interface MealFormProps {
-  onMealAdded?: (meal: any) => void;
+  onDone?: () => void;
 }
 
-export function MealForm({ onMealAdded }: MealFormProps) {
+export function MealForm({ onDone }: MealFormProps) {
   const [mealDescription, setMealDescription] = useState('');
   const [loading, setLoading] = useState(false);
-  const { apiKey } = userStore();
+
   const { addMeal } = useNutritionStore();
+  const { profile } = useUserStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!apiKey) {
-      toast.error('API-Key nicht konfiguriert!');
-      return;
-    }
-
     if (!mealDescription.trim()) {
-      toast.error('Bitte beschreibe deine Mahlzeit');
+      toast.error('Bitte beschreibe deine Mahlzeit.');
       return;
     }
 
     setLoading(true);
-    try {
-      geminiClient.initialize(apiKey);
-      toast.loading('🍽️ Analysiere Mahlzeit...');
+    const t = toast.loading('Mahlzeit wird analysiert ...');
 
-      const nutrition = await geminiClient.analyzeMealFromText(
-        mealDescription,
-      );
+    try {
+      // TODO: hier deine echte Analyse-Funktion aufrufen
+      // z.B.: const meal = await analyzeTextMeal(mealDescription, profile);
 
       const meal = {
-        id: `meal-${Date.now()}`,
         name: mealDescription,
-        items: nutrition.items,
-        totalCalories: nutrition.totalCalories,
-        totalProtein: nutrition.totalProtein,
-        totalCarbs: nutrition.totalCarbs,
-        totalFat: nutrition.totalFat,
-        createdAt: new Date().toISOString(),
+        estimatedGrams: 100,
+        calories: 250,
+        protein: 10,
+        carbs: 30,
+        fat: 8,
       };
 
       addMeal(meal);
-      toast.dismiss();
-      toast.success('✅ Mahlzeit hinzugefügt!');
       setMealDescription('');
-      onMealAdded?.(meal);
-    } catch (error: any) {
-      toast.dismiss();
-      toast.error(error.message || 'Fehler bei der Analyse');
+
+      toast.success('✅ Mahlzeit hinzugefügt!', { id: t });
+
+      onDone?.();
+    } catch (error) {
       console.error(error);
+      toast.error('Analyse fehlgeschlagen.', { id: t });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="card">
-      <h3 className="text-lg font-semibold mb-4">📝 Mahlzeit eingeben</h3>
-
+    <form onSubmit={handleSubmit} className="space-y-3">
       <textarea
+        className="w-full rounded-md border border-gray-300 p-2 text-sm"
+        rows={3}
+        placeholder="z.B. 1 Teller Spaghetti Bolognese mit Käse"
         value={mealDescription}
         onChange={(e) => setMealDescription(e.target.value)}
-        placeholder="z.B. 'Hähnchen mit Reis und Brokkoli' oder '2 Scheiben Toast mit Butter'"
-        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-        rows={3}
         disabled={loading}
       />
 
       <button
         type="submit"
-        disabled={loading || !mealDescription.trim()}
-        className="mt-4 w-full btn-primary disabled:opacity-50"
+        disabled={loading}
+        className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
       >
-        {loading ? '⏳ Wird analysiert...' : '➕ Mahlzeit hinzufügen'}
+        {loading ? 'Analysiere ...' : 'Mahlzeit analysieren'}
       </button>
     </form>
   );
