@@ -80,7 +80,11 @@ WICHTIG:
         ],
       });
 
-      const text = result.response?.text || '';
+      // neues SDK: Text kommt direkt/am Candidate, nicht mehr unter result.response
+      const text =
+        (result as any)?.text ??
+        (result as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
+        '';
 
       let data: any;
       try {
@@ -169,7 +173,11 @@ WICHTIG:
         ],
       });
 
-      const text = result.response?.text || '';
+      // gleiche Anpassung wie oben
+      const text =
+        (result as any)?.text ??
+        (result as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
+        '';
 
       let data: any;
       try {
@@ -259,7 +267,7 @@ HEUTE GEGESSEN:
 
 Gib 2-3 KONKRETE, ACTIONABLE Tipps für heute/morgen basierend auf den Daten (max. 200 Wörter). Sei motivierend und praktisch!`;
 
-    const result = await ai.models.generateContent({
+      const result = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [
           {
@@ -269,7 +277,12 @@ Gib 2-3 KONKRETE, ACTIONABLE Tipps für heute/morgen basierend auf den Daten (ma
         ],
       });
 
-      return result.response?.text || '';
+      const text =
+        (result as any)?.text ??
+        (result as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
+        '';
+
+      return text;
     } catch (error: any) {
       console.error('Gemini Coaching Error:', error);
       throw new Error('Coaching-Advice fehlgeschlagen');
