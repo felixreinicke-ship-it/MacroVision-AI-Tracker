@@ -1,3 +1,6 @@
+// src/app/store/user-store.ts
+'use client';
+
 import { create } from 'zustand';
 import type { NutritionItem, NutritionData } from '../types/nutrition';
 
@@ -5,6 +8,7 @@ export interface UserProfile {
   age: number;
   weightKg: number;
   heightCm: number;
+  gender: 'male' | 'female';
   goal: 'lose' | 'maintain' | 'gain';
   activityLevel: 'low' | 'medium' | 'high';
 }
@@ -13,9 +17,12 @@ interface UserState {
   profile: UserProfile | null;
   meals: NutritionItem[];
   aggregated: NutritionData;
+  apiKey: string | null;
+
+  setProfile: (profile: UserProfile) => void;
+  setApiKey: (key: string) => void;
   addMeal: (item: NutritionItem) => void;
   resetMeals: () => void;
-  setProfile: (profile: UserProfile) => void;
 }
 
 const emptyAggregated: NutritionData = {
@@ -30,19 +37,18 @@ export const useUserStore = create<UserState>((set, get) => ({
   profile: null,
   meals: [],
   aggregated: emptyAggregated,
+  apiKey: null,
 
   setProfile(profile) {
     set({ profile });
   },
 
-  addMeal(item) {
-    const id =
-      item.id ??
-      (typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random()}`);
+  setApiKey(key) {
+    set({ apiKey: key });
+  },
 
-    const meal: NutritionItem = { ...item, id };
+  addMeal(item) {
+    const meal: NutritionItem = { ...item };
 
     const meals = [...get().meals, meal];
 

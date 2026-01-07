@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNutritionStore } from '@/app/store/nutrition-store';
 import { useUserStore } from '@/app/store/user-store';
+import { geminiClient } from '@/app/lib/gemini-client';
+import type { Meal } from '@/app/types/nutrition';
 
 interface MealFormProps {
   onDone?: () => void;
@@ -28,16 +30,23 @@ export function MealForm({ onDone }: MealFormProps) {
     const t = toast.loading('Mahlzeit wird analysiert ...');
 
     try {
-      // TODO: hier deine echte Analyse-Funktion aufrufen
-      // z.B.: const meal = await analyzeTextMeal(mealDescription, profile);
+      // Analyse über Text
+      const nutrition = await geminiClient.analyzeMealFromText(mealDescription);
 
-      const meal = {
-        name: mealDescription,
-        estimatedGrams: 100,
-        calories: 250,
-        protein: 10,
-        carbs: 30,
-        fat: 8,
+      if (!nutrition.items || nutrition.items.length === 0) {
+        throw new Error('Keine Mahlzeit erkannt');
+      }
+
+      const first = nutrition.items[0];
+
+      const meal: Meal = {
+        id: crypto.randomUUID(),
+        name: first.name,
+        estimatedGrams: first.estimatedGrams,
+        calories: first.calories,
+        protein: first.protein,
+        carbs: first.carbs,
+        fat: first.fat,
       };
 
       addMeal(meal);

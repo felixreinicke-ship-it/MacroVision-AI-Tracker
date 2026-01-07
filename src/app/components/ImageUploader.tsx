@@ -1,55 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import { geminiClient } from '@/app/lib/gemini-client';
 import { useNutritionStore } from '@/app/store/nutrition-store';
-
-function imageToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === 'string') {
-        resolve(result.split(',')[1] ?? '');
-      } else {
-        reject(new Error('Fehler beim Lesen der Datei'));
-      }
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
+import { Meal } from '@/app/types/nutrition';
 
 export function ImageUploader() {
-  const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { addMeal } = useNutritionStore();
 
-  const handleImageChange = async (file: File) => {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    setLoading(true);
-    const uploadToast = toast.loading('Bild wird verarbeitet ...');
+    const uploadToast = toast.loading('Bild wird analysiert ...');
+    setUploading(true);
 
     try {
-      // Preview im UI anzeigen
-      const previewUrl = URL.createObjectURL(file);
-      setPreview(previewUrl);
+      // Preview anzeigen
+      const localUrl = URL.createObjectURL(file);
+      setPreviewUrl(localUrl);
 
-      // Bild in base64 umwandeln
-      const base64 = await imageToBase64(file);
+      // Datei in Base64 umwandeln
+      const base64 = await fileToBase64(file);
 
-      // TODO: Hier später deine echte Analyse-Funktion aufrufen
-      // z.B.: const meal = await analyzeImageWithGemini(base64);
+      // Bild von Gemini analysieren lassen
+      const nutrition = await geminiClient.analyzeMealFromImage(base64);
 
-      // Temporärer Dummy-Eintrag, damit der Typ passt
-      const meal = {
-        name: 'Foto-Mahlzeit',
-        estimatedGrams: 100,
-        calories: 250,
-        protein: 10,
-        carbs: 30,
-        fat: 8,
+      if (!nutrition.items || nutrition.items.length === 0) {
+        throw new Error('Keine Mahlzeit erkannt');
+      }
+
+      const first = nutrition.items[0];
+
+      const meal: Meal = {
+        id: crypto.randomUUID(),
+        name: first.name,
+        estimatedGrams: first.estimatedGrams,
+        calories: first.calories,
+        protein: first.protein,
+        carbs: first.carbs,
+        fat: first.fat,
       };
 
       addMeal(meal);
@@ -57,42 +50,48 @@ export function ImageUploader() {
       toast.success('✅ Mahlzeit aus Bild hinzugefügt!', { id: uploadToast });
     } catch (error) {
       console.error(error);
-      toast.error('Verarbeitung fehlgeschlagen.', { id: uploadToast });
+      toast.error('Bild-Analyse fehlgeschlagen.', { id: uploadToast });
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
-  };
+  }
 
   return (
-    <div className="space-y-4">
-      <label className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-6 cursor-pointer hover:border-gray-400">
-        <span className="mb-2 text-sm text-gray-500">
-          {loading ? 'Bild wird hochgeladen ...' : 'Klicke hier, um ein Bild hochzuladen'}
-        </span>
+    <div className="space-y-3">
+      <label className="flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-gray-400 p-4 text-sm text-gray-600 hover:bg-gray-50">
         <input
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              void handleImageChange(file);
-            }
-          }}
-          disabled={loading}
+          onChange={handleFileChange}
+          disabled={uploading}
         />
+        <span>{uploading ? 'Lade hoch & analysiere ...' : 'Bild einer Mahlzeit hochladen'}</span>
+        <span className="text-xs text-gray-400">JPG oder PNG, max. ein Bild</span>
       </label>
 
-      {preview && (
-        <div className="mt-2">
-          <p className="mb-1 text-sm text-gray-500">Vorschau:</p>
+      {previewUrl && (
+        <div className="overflow-hidden rounded-md border border-gray-200">
           <img
-            src={preview}
-            alt="Meal preview"
-            className="max-h-64 w-auto rounded-lg object-cover"
+            src={previewUrl}
+            alt="Preview"
+            className="h-48 w-full object-cover"
           />
         </div>
       )}
     </div>
   );
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1] || '';
+      resolve(base64);
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
 }

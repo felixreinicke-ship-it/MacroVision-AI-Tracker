@@ -1,3 +1,4 @@
+// src/app/dashboard/page.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -5,33 +6,43 @@ import { useRouter } from 'next/navigation';
 import { MealForm } from '@/app/components/MealForm';
 import { useNutritionStore } from '@/app/store/nutrition-store';
 import { useUserStore } from '@/app/store/user-store';
+import { NutritionAnalyzer } from '@/app/lib/nutrition-analyzer';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { profile } = useUserStore();
-  const { meals, dailyNutrition, setDailyNutrition } = useNutritionStore();
+  const { meals, dailyNutrition, dailyTarget, setDailyNutrition, setDailyTarget } =
+    useNutritionStore();
 
+  // Wenn kein Profil vorhanden ist → zurück zur Startseite
   useEffect(() => {
-    // wenn kein Profil vorhanden ist, zurück zur Startseite
     if (!profile) {
       router.push('/');
     }
   }, [profile, router]);
 
+  // Daily Target aus Profil berechnen
   useEffect(() => {
-    // tägliche Nährwerte aus den Mahlzeiten berechnen
-    const totals = meals.reduce(
-      (acc, m) => ({
-        calories: acc.calories + (m.calories || 0),
-        protein: acc.protein + (m.protein || 0),
-        carbs: acc.carbs + (m.carbs || 0),
-        fat: acc.fat + (m.fat || 0),
-      }),
-      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    if (!profile) return;
+
+    const target = NutritionAnalyzer.calculateDailyTarget(
+      profile.age,
+      profile.heightCm,
+      profile.weightKg,
+      profile.activityLevel,
+      profile.goal,
     );
 
+    setDailyTarget(target);
+  }, [profile, setDailyTarget]);
+
+  // tägliche Nährwerte aus den Mahlzeiten berechnen
+  useEffect(() => {
+    if (!dailyTarget) return;
+
+    const totals = NutritionAnalyzer.calculateDailyNutrition(meals, dailyTarget);
     setDailyNutrition(totals);
-  }, [meals, setDailyNutrition]);
+  }, [meals, dailyTarget, setDailyNutrition]);
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 p-4">
@@ -49,10 +60,17 @@ export default function DashboardPage() {
 
       <section>
         <h2 className="mb-2 text-lg font-semibold">Heute</h2>
-        <p className="text-sm text-gray-700">
-          Kalorien: {dailyNutrition.calories} kcal · Protein: {dailyNutrition.protein} g ·
-          Kohlenhydrate: {dailyNutrition.carbs} g · Fett: {dailyNutrition.fat} g
-        </p>
+        {dailyNutrition ? (
+          <p className="text-sm text-gray-700">
+            Kalorien: {dailyNutrition.totalCalories} kcal · Protein:{' '}
+            {dailyNutrition.totalProtein} g · Kohlenhydrate:{' '}
+            {dailyNutrition.totalCarbs} g · Fett: {dailyNutrition.totalFat} g
+          </p>
+        ) : (
+          <p className="text-sm text-gray-400">
+            Noch keine Tageswerte berechnet.
+          </p>
+        )}
       </section>
 
       <section>

@@ -38,14 +38,12 @@ export default function OnboardingPage() {
     }
 
     setProfile({
-      id: `user-${Date.now()}`,
       age: parseInt(profileData.age),
       gender: profileData.gender,
       heightCm: parseInt(profileData.heightCm),
       weightKg: parseFloat(profileData.weightKg),
       activityLevel: profileData.activityLevel,
       goal: profileData.goal,
-      createdAt: new Date().toISOString(),
     });
 
     toast.success('✅ Profil erstellt!');

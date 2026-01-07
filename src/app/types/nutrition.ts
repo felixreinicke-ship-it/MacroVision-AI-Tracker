@@ -1,17 +1,30 @@
 // src/app/types/nutrition.ts
 
-export interface Meal {
-  id: string;
+export interface NutritionItem {
   name: string;
+  estimatedGrams: number;
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  // wenn du totalCalories usw. verwendest:
+}
+
+export interface NutritionData {
+  items: NutritionItem[];
   totalCalories: number;
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
+}
+
+export interface Meal {
+  id: string;
+  name: string;
+  estimatedGrams: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
 }
 
 export interface DailyTarget {

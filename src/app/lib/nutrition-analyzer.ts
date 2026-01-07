@@ -1,3 +1,4 @@
+// src/app/lib/nutrition-analyzers.ts
 import { Meal, DailyNutrition, DailyTarget } from '@/app/types/nutrition';
 
 export class NutritionAnalyzer {
@@ -41,10 +42,10 @@ export class NutritionAnalyzer {
   static aggregateMeals(meals: Meal[]) {
     return meals.reduce(
       (acc, meal) => ({
-        totalCalories: acc.totalCalories + meal.totalCalories,
-        totalProtein: acc.totalProtein + meal.totalProtein,
-        totalCarbs: acc.totalCarbs + meal.totalCarbs,
-        totalFat: acc.totalFat + meal.totalFat,
+        totalCalories: acc.totalCalories + (meal.calories || 0),
+        totalProtein: acc.totalProtein + (meal.protein || 0),
+        totalCarbs: acc.totalCarbs + (meal.carbs || 0),
+        totalFat: acc.totalFat + (meal.fat || 0),
       }),
       { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 },
     );
@@ -59,7 +60,10 @@ export class NutritionAnalyzer {
     return {
       date: new Date().toISOString().split('T')[0],
       meals,
-      ...aggregated,
+      totalCalories: aggregated.totalCalories,
+      totalProtein: aggregated.totalProtein,
+      totalCarbs: aggregated.totalCarbs,
+      totalFat: aggregated.totalFat,
       dailyTarget,
       progress: {
         caloriesProgress: Math.min(
