@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next';
 import './globals.css';
+import { ThemeWrapper } from './theme-wrapper';
 
 export const metadata: Metadata = {
   title: 'MacroVision',
@@ -14,8 +15,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de">
-      <body className="app-dark">
-        {children}
+      <body>
+        <ThemeWrapper>{children}</ThemeWrapper>
       </body>
     </html>
   );
