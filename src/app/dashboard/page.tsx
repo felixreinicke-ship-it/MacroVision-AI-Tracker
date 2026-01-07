@@ -9,7 +9,8 @@ import { MealForm } from '@/app/components/MealForm';
 import ImageUploader from '@/app/components/ImageUploader';
 import { NutritionAnalyzer } from '@/app/lib/nutrition-analyzer';
 import type { NutritionItem } from '@/app/types/nutrition';
-
+import { NutritionRings } from '../components/NutritionRings';
+import { MacroBars } from '../components/MacroBars';
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -22,14 +23,12 @@ export default function DashboardPage() {
     setDailyTarget,
   } = useNutritionStore();
 
-  // Wenn kein Profil vorhanden ist → zurück zur Startseite
   useEffect(() => {
     if (!profile) {
       router.push('/');
     }
   }, [profile, router]);
 
-  // Daily Target aus Profil berechnen
   useEffect(() => {
     if (!profile) return;
 
@@ -44,7 +43,6 @@ export default function DashboardPage() {
     setDailyTarget(target);
   }, [profile, setDailyTarget]);
 
-  // tägliche Nährwerte aus den Mahlzeiten berechnen
   useEffect(() => {
     if (!dailyTarget) return;
 
@@ -53,57 +51,120 @@ export default function DashboardPage() {
   }, [meals, dailyTarget, setDailyNutrition]);
 
   if (!profile) {
-    // kurz nichts rendern, bis redirect passiert
     return null;
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Header */}
-        <header>
-          <h1 className="text-2xl font-bold">Dein Dashboard</h1>
-          <p className="text-sm text-gray-600">
-            Erfasse deine Mahlzeiten per Text oder Bild und sieh deine Tageswerte.
-          </p>
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-50">
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        {/* Top-Bar */}
+        <header className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-400">Willkommen zurück</p>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              MacroVision Dashboard
+            </h1>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-full bg-slate-800/70 px-4 py-1 text-xs text-slate-200 border border-slate-700">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Ziele aktiv
+          </span>
         </header>
 
-        {/* Text-Mahlzeit */}
-        <section className="bg-white rounded-xl shadow p-4">
-          <h2 className="font-semibold mb-2">Neue Mahlzeit (Text)</h2>
-          <MealForm />
-        </section>
+        {/* Grid: Ringe + Eingabe */}
+        <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          {/* Progress-Cards */}
+          <section className="space-y-4">
+            <NutritionRings />
+            <MacroBars />
+          </section>
 
-        {/* Bild-Mahlzeit */}
-        <section className="bg-white rounded-xl shadow p-4">
-          <h2 className="font-semibold mb-2">Neue Mahlzeit (Foto)</h2>
-          <ImageUploader
-            onMealDetected={(meal: NutritionItem) => {
-              // meal aus dem Bild-Analyzer ins User-Store übernehmen
-              addMeal(meal);
-            }}
-          />
-        </section>
+          {/* Eingabe-Cards */}
+          <section className="space-y-4">
+            <div className="rounded-3xl bg-slate-900/80 border border-slate-800 shadow-[0_18px_60px_rgba(0,0,0,0.65)] p-4 sm:p-5">
+              <h2 className="text-sm font-medium text-slate-100 mb-1">
+                Neue Mahlzeit (Text)
+              </h2>
+              <p className="text-xs text-slate-400 mb-3">
+                Beschreibe dein Essen in einem Satz. Die KI schätzt die
+                Nährwerte.
+              </p>
+              <MealForm />
+            </div>
 
-        {/* Tagesübersicht */}
+            <div className="rounded-3xl bg-slate-900/80 border border-slate-800 shadow-[0_18px_60px_rgba(0,0,0,0.65)] p-4 sm:p-5">
+              <h2 className="text-sm font-medium text-slate-100 mb-1">
+                Neue Mahlzeit (Foto)
+              </h2>
+              <p className="text-xs text-slate-400 mb-3">
+                Lade ein Foto hoch oder nutze die Kamera, um dein Gericht zu
+                scannen.
+              </p>
+              <ImageUploader
+                onMealDetected={(meal: NutritionItem) => {
+                  addMeal(meal);
+                }}
+              />
+            </div>
+          </section>
+        </div>
+
+        {/* Tagesübersicht unten als Card */}
         {dailyNutrition && dailyTarget && (
-          <section className="bg-white rounded-xl shadow p-4">
-            <h2 className="font-semibold mb-2">Heute</h2>
-            <p>
-              Kalorien: {dailyNutrition.totalCalories} / {dailyTarget.calories} kcal
-            </p>
-            <p>
-              Protein: {dailyNutrition.totalProtein} g / {dailyTarget.protein} g
-            </p>
-            <p>
-              Kohlenhydrate: {dailyNutrition.totalCarbs} g / {dailyTarget.carbs} g
-            </p>
-            <p>
-              Fett: {dailyNutrition.totalFat} g / {dailyTarget.fat} g
-            </p>
+          <section className="rounded-3xl bg-slate-900/80 border border-slate-800 shadow-[0_18px_60px_rgba(0,0,0,0.65)] p-4 sm:p-5">
+            <h2 className="text-sm font-medium text-slate-100 mb-3">Heute</h2>
+            <DailySummary />
           </section>
         )}
       </div>
     </main>
+  );
+}
+
+/**
+ * Kompakte Tagesübersicht in Apple-Style Cards
+ */
+function DailySummary() {
+  const { dailyNutrition, dailyTarget } = useNutritionStore();
+  if (!dailyNutrition || !dailyTarget) return null;
+
+  const rows = [
+    {
+      label: 'Kalorien',
+      value: `${Math.round(dailyNutrition.totalCalories)} kcal`,
+      target: `${Math.round(dailyTarget.calories)} kcal`,
+    },
+    {
+      label: 'Protein',
+      value: `${Math.round(dailyNutrition.totalProtein)} g`,
+      target: `${Math.round(dailyTarget.protein)} g`,
+    },
+    {
+      label: 'Kohlenhydrate',
+      value: `${Math.round(dailyNutrition.totalCarbs)} g`,
+      target: `${Math.round(dailyTarget.carbs)} g`,
+    },
+    {
+      label: 'Fett',
+      value: `${Math.round(dailyNutrition.totalFat)} g`,
+      target: `${Math.round(dailyTarget.fat)} g`,
+    },
+  ];
+
+  return (
+    <div className="grid gap-2 text-sm text-slate-200 sm:grid-cols-2">
+      {rows.map((r) => (
+        <div
+          key={r.label}
+          className="flex items-center justify-between rounded-2xl bg-slate-900/80 border border-slate-800 px-3 py-2"
+        >
+          <span className="text-slate-300">{r.label}</span>
+          <span className="text-[13px] text-slate-100">
+            {r.value}
+            <span className="text-slate-500"> / {r.target}</span>
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
