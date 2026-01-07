@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNutritionStore } from '@/app/store/nutrition-store';
-import { userStore } from '@/app/store/user-store';
+import { useUserStore } from '@/app/store/user-store';
 import { geminiClient } from '@/app/lib/gemini-client';
 
 function imageToBase64(file: File): Promise<string> {

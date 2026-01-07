@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { userStore } from '@/app/store/user-store';
+import { useUserStore } from '@/app/store/user-store';
 import toast from 'react-hot-toast';
 import { geminiClient } from '@/app/lib/gemini-client';
 

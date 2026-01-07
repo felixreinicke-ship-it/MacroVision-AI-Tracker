@@ -1,4 +1,4 @@
-import { Meal, DailyNutrition, DailyTarget } from '@/types/nutrition';
+import { Meal, DailyNutrition, DailyTarget } from '@/app/types/nutrition';
 
 export class NutritionAnalyzer {
   static calculateDailyTarget(

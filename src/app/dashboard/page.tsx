@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ImageUploader } from '@/app/components/ImageUploader';
 import { MealForm } from '@/app/components/MealForm';
 import { useNutritionStore } from '@/app/store/nutrition-store';
-import { userStore } from '@/app/store/user-store';
+import { useUserStore } from '@/app/store/user-store';
 import { NutritionAnalyzer } from '@/app/lib/nutrition-analyzer';
 
 export default function DashboardPage() {
