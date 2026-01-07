@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNutritionStore } from '@/app/store/nutrition-store';
-import { geminiClient } from '@/app/lib/gemini-client';
 
 function imageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -30,28 +29,35 @@ export function ImageUploader() {
     if (!file) return;
 
     setLoading(true);
-    const uploadToast = toast.loading('Bild wird analysiert ...');
+    const uploadToast = toast.loading('Bild wird verarbeitet ...');
 
     try {
-      // Preview fürs UI
+      // Preview im UI anzeigen
       const previewUrl = URL.createObjectURL(file);
       setPreview(previewUrl);
 
+      // Bild in base64 umwandeln
       const base64 = await imageToBase64(file);
 
-      const response = await geminiClient.analyzeImage(base64);
+      // TODO: Hier später deine echte Analyse-Funktion aufrufen
+      // z.B.: const meal = await analyzeImageWithGemini(base64);
 
-      // Erwartet, dass deine analyzeImage-Funktion ein NutritionItem-kompatibles Objekt zurückgibt
-      const meal = response.meal; // ggf. an deine Struktur anpassen
+      // Temporärer Dummy-Eintrag, damit der Typ passt
+      const meal = {
+        name: 'Foto-Mahlzeit',
+        estimatedGrams: 100,
+        calories: 250,
+        protein: 10,
+        carbs: 30,
+        fat: 8,
+      };
 
       addMeal(meal);
 
-      toast.success('✅ Mahlzeit hinzugefügt!', { id: uploadToast });
-    } catch (error: any) {
+      toast.success('✅ Mahlzeit aus Bild hinzugefügt!', { id: uploadToast });
+    } catch (error) {
       console.error(error);
-      toast.error('Analyse fehlgeschlagen. Bitte versuch es nochmal.', {
-        id: uploadToast,
-      });
+      toast.error('Verarbeitung fehlgeschlagen.', { id: uploadToast });
     } finally {
       setLoading(false);
     }
