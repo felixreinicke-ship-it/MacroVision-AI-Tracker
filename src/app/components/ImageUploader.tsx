@@ -1,146 +1,91 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNutritionStore } from '@/app/store/nutrition-store';
-import { useUserStore } from '@/app/store/user-store';
 import { geminiClient } from '@/app/lib/gemini-client';
 
 function imageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const result = reader.result as string;
-      const base64 = result.split(',')[1];
-      resolve(base64);
+      const result = reader.result;
+      if (typeof result === 'string') {
+        resolve(result.split(',')[1] ?? '');
+      } else {
+        reject(new Error('Fehler beim Lesen der Datei'));
+      }
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
 }
 
-interface ImageUploaderProps {
-  onMealDetected?: (meal: any) => void;
-}
-
-export function ImageUploader({ onMealDetected }: ImageUploaderProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-const [loading, setLoading] = useState(false);
-const [preview, setPreview] = useState<string | null>(null);
-const { addMeal } = useNutritionStore();
+export function ImageUploader() {
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const { addMeal } = useNutritionStore();
 
   const handleImageChange = async (file: File) => {
-    if (!apiKey) {
-      toast.error('API-Key nicht konfiguriert!');
-      return;
-    }
+    if (!file) return;
 
     setLoading(true);
+    const uploadToast = toast.loading('Bild wird analysiert ...');
+
     try {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Preview fürs UI
+      const previewUrl = URL.createObjectURL(file);
+      setPreview(previewUrl);
 
       const base64 = await imageToBase64(file);
 
-      geminiClient.initialize(apiKey);
+      const response = await geminiClient.analyzeImage(base64);
 
-      toast.loading('🍴 Analysiere Bild...');
-      const nutrition = await geminiClient.analyzeMealFromImage(base64);
-
-      const meal = {
-        id: `meal-${Date.now()}`,
-        name: 'Mahlzeit vom Foto',
-        items: nutrition.items,
-        totalCalories: nutrition.totalCalories,
-        totalProtein: nutrition.totalProtein,
-        totalCarbs: nutrition.totalCarbs,
-        totalFat: nutrition.totalFat,
-        imageUrl: preview || undefined,
-        createdAt: new Date().toISOString(),
-      };
+      // Erwartet, dass deine analyzeImage-Funktion ein NutritionItem-kompatibles Objekt zurückgibt
+      const meal = response.meal; // ggf. an deine Struktur anpassen
 
       addMeal(meal);
-      toast.dismiss();
-      toast.success(`✅ ${nutrition.items.length} Lebensmittel erkannt!`);
 
-      onMealDetected?.(meal);
-
-      setPreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      toast.success('✅ Mahlzeit hinzugefügt!', { id: uploadToast });
     } catch (error: any) {
-      toast.dismiss();
-      toast.error(error.message || 'Fehler beim Analysieren des Bildes');
       console.error(error);
+      toast.error('Analyse fehlgeschlagen. Bitte versuch es nochmal.', {
+        id: uploadToast,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="card border-2 border-dashed border-blue-300">
-      <h3 className="text-lg font-semibold mb-4">📸 Foto-Tracking</h3>
+    <div className="space-y-4">
+      <label className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-6 cursor-pointer hover:border-gray-400">
+        <span className="mb-2 text-sm text-gray-500">
+          {loading ? 'Bild wird hochgeladen ...' : 'Klicke hier, um ein Bild hochzuladen'}
+        </span>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              void handleImageChange(file);
+            }
+          }}
+          disabled={loading}
+        />
+      </label>
 
       {preview && (
-        <div className="mb-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+        <div className="mt-2">
+          <p className="mb-1 text-sm text-gray-500">Vorschau:</p>
           <img
             src={preview}
-            alt="Preview"
-            className="max-h-48 rounded-lg mx-auto"
+            alt="Meal preview"
+            className="max-h-64 w-auto rounded-lg object-cover"
           />
         </div>
-      )}
-
-      <div className="flex gap-3">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={loading}
-          className="flex-1 btn-primary disabled:opacity-50"
-        >
-          📁 Datei auswählen
-        </button>
-        <button
-          onClick={() => cameraInputRef.current?.click()}
-          disabled={loading}
-          className="flex-1 btn-primary disabled:opacity-50"
-        >
-          📷 Kamera
-        </button>
-      </div>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={(e) => {
-          if (e.target.files?.[0]) {
-            handleImageChange(e.target.files[0]);
-          }
-        }}
-        hidden
-      />
-
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={(e) => {
-          if (e.target.files?.[0]) {
-            handleImageChange(e.target.files[0]);
-          }
-        }}
-        hidden
-      />
-
-      {loading && (
-        <p className="mt-4 text-center text-sm text-gray-500">
-          ⏳ Wird verarbeitet...
-        </p>
       )}
     </div>
   );
